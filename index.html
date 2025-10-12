@@ -50,7 +50,8 @@
             currentUser: null,
             requests: [],
             loading: false,
-            loginError: null
+            loginError: null,
+            filter: 'all' // all, new, assigned, completed
         };
 
         function getDriveFileUrl(fileId) {
@@ -127,6 +128,19 @@
                 'Dokončeno': 'bg-green-100 text-green-800'
             };
             return colors[stav] || 'bg-gray-100 text-gray-800';
+        }
+
+        function setFilter(filter) {
+            state.filter = filter;
+            render();
+        }
+
+        function getFilteredRequests() {
+            if (state.filter === 'all') return state.requests;
+            if (state.filter === 'new') return state.requests.filter(r => r.stav === 'Nový');
+            if (state.filter === 'assigned') return state.requests.filter(r => r.stav === 'Přiřazeno');
+            if (state.filter === 'completed') return state.requests.filter(r => r.stav === 'Dokončeno');
+            return state.requests;
         }
 
         // Google Sign In
@@ -302,30 +316,70 @@
 
                         <!-- Statistiky -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                            <div class="bg-blue-50 rounded-xl p-4 border-l-4 border-blue-500">
+                            <button 
+                                onclick="filterClick('new')"
+                                class="bg-blue-50 rounded-xl p-4 border-l-4 border-blue-500 text-left hover:shadow-md transition-all cursor-pointer"
+                            >
                                 <p class="text-sm text-blue-700 font-semibold">Nové požadavky</p>
                                 <p class="text-3xl font-bold text-blue-800">
                                     ${state.requests.filter(r => r.stav === 'Nový').length}
                                 </p>
-                            </div>
-                            <div class="bg-yellow-50 rounded-xl p-4 border-l-4 border-yellow-500">
+                            </button>
+                            <button 
+                                onclick="filterClick('assigned')"
+                                class="bg-yellow-50 rounded-xl p-4 border-l-4 border-yellow-500 text-left hover:shadow-md transition-all cursor-pointer"
+                            >
                                 <p class="text-sm text-yellow-700 font-semibold">Přiřazené</p>
                                 <p class="text-3xl font-bold text-yellow-800">
                                     ${state.requests.filter(r => r.stav === 'Přiřazeno').length}
                                 </p>
-                            </div>
-                            <div class="bg-green-50 rounded-xl p-4 border-l-4 border-green-500">
+                            </button>
+                            <button 
+                                onclick="filterClick('completed')"
+                                class="bg-green-50 rounded-xl p-4 border-l-4 border-green-500 text-left hover:shadow-md transition-all cursor-pointer"
+                            >
                                 <p class="text-sm text-green-700 font-semibold">Dokončené</p>
                                 <p class="text-3xl font-bold text-green-800">
                                     ${state.requests.filter(r => r.stav === 'Dokončeno').length}
                                 </p>
-                            </div>
+                            </button>
                         </div>
 
                         <!-- Seznam požadavků -->
                         <div class="bg-white rounded-2xl shadow-lg p-6">
+                            <!-- Filter tabs -->
+                            <div class="flex flex-wrap gap-2 mb-6 pb-4 border-b">
+                                <button 
+                                    onclick="filterClick('all')"
+                                    class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                                >
+                                    Vše (${state.requests.length})
+                                </button>
+                                <button 
+                                    onclick="filterClick('new')"
+                                    class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filter === 'new' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                                >
+                                    🔵 Nové (${state.requests.filter(r => r.stav === 'Nový').length})
+                                </button>
+                                <button 
+                                    onclick="filterClick('assigned')"
+                                    class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filter === 'assigned' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                                >
+                                    🟡 Přiřazené (${state.requests.filter(r => r.stav === 'Přiřazeno').length})
+                                </button>
+                                <button 
+                                    onclick="filterClick('completed')"
+                                    class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filter === 'completed' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                                >
+                                    🟢 Dokončené (${state.requests.filter(r => r.stav === 'Dokončeno').length})
+                                </button>
+                            </div>
+
                             <h2 class="text-2xl font-bold text-gray-800 mb-6">
-                                Všechny požadavky (${state.requests.length})
+                                ${state.filter === 'all' ? 'Všechny požadavky' : 
+                                  state.filter === 'new' ? 'Nové požadavky' :
+                                  state.filter === 'assigned' ? 'Přiřazené požadavky' :
+                                  'Dokončené požadavky'} (${getFilteredRequests().length})
                             </h2>
 
                             ${state.loading ? `
@@ -333,13 +387,18 @@
                                     <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
                                     <p class="mt-4 text-gray-600">Načítám požadavky...</p>
                                 </div>
-                            ` : state.requests.length === 0 ? `
+                            ` : getFilteredRequests().length === 0 ? `
                                 <div class="text-center py-12">
-                                    <p class="text-gray-600 text-lg">Zatím žádné požadavky</p>
+                                    <p class="text-gray-600 text-lg">
+                                        ${state.filter === 'all' ? 'Zatím žádné požadavky' :
+                                          state.filter === 'new' ? 'Žádné nové požadavky' :
+                                          state.filter === 'assigned' ? 'Žádné přiřazené požadavky' :
+                                          'Žádné dokončené požadavky'}
+                                    </p>
                                 </div>
                             ` : `
                                 <div class="space-y-4">
-                                    ${state.requests.map(req => `
+                                    ${getFilteredRequests().map(req => `
                                         <div class="border-2 border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow">
                                             <div class="flex justify-between items-start mb-3">
                                                 <div class="flex-1">
@@ -435,6 +494,7 @@
             window.refreshClick = loadRequests;
             window.exportClick = exportToExcel;
             window.assignClick = assignGeodet;
+            window.filterClick = setFilter;
         }
 
         // Initial render
