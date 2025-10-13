@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Správa geodetických požadavků</title>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -31,8 +32,32 @@
 
         const API_URL = 'https://script.google.com/macros/s/AKfycbxMcVSWoZgeFU_jE2RUp_INEhZeAOo_T6qAZywQHUg3TTZ71acgvM9CjGQy4eAnXDTLPQ/exec';
 
+        // EmailJS konfigurace - NOVÝ ÚČET pro notifikace geodetům
+        // Po vytvoření nového EmailJS účtu vyplňte tyto údaje:
+        const EMAIL_CONFIG_GEODET = {
+            serviceId: 'service_0taolia',  // Zkopírujte z nového EmailJS účtu
+            templateId: 'template_assign',  // ID šablony pro geodety (kratší)
+            publicKey: 'TdJBj4Of2_GaOp6sO'  // Public Key z nového účtu
+        };
+
+        // Inicializace EmailJS s novým účtem
+        emailjs.init(EMAIL_CONFIG_GEODET.publicKey);
+
+        // Mapování geodetů na jejich emaily - DOPLŇTE SKUTEČNÉ EMAILY
+        const geodetEmails = {
+            'Dalibor Straka': 'dalibor.straka@strabag.com',
+            'Tomáš Horáček': 'tomas.horacek@strabag.com',
+            'Petr Kočiš': 'petr.kocis@strabag.com',
+            'Michal Apt': 'michal.apt@strabag.com',
+            'Alexandra Pinkovska': 'alexandra.pinkovska@strabag.com',
+            'Matej Kovac': 'matej.kovac@strabag.com',
+            'Roland Klimt': 'roland.klimt@strabag.com',
+            'Jan Trnka': 'jan.trnka@strabag.com',
+            'Martin Morvay': 'martin.morvay@strabag.com'
+        };
+
         const ALLOWED_EMAILS = [
-            'mavesela@atlas.cz','tomaula@gmail.com',
+            'martina.veselá@strabag.com',
         ];
 
         const geodeti = [
@@ -77,6 +102,13 @@
             if (!geodet) return;
             
             try {
+                // Najít požadavek
+                const request = state.requests.find(r => r.id == requestId);
+                if (!request) {
+                    alert('❌ Požadavek nebyl nalezen');
+                    return;
+                }
+
                 const params = new URLSearchParams({
                     action: 'update',
                     id: requestId,
@@ -87,7 +119,33 @@
                 const response = await fetch(`${API_URL}?${params}`);
                 await response.json();
                 
-                alert(`✅ Geodet ${geodet} byl přiřazen`);
+                // Odeslat email geodetovi
+                const geodetEmail = geodetEmails[geodet];
+                if (geodetEmail) {
+                    try {
+                        await emailjs.send(
+                            EMAIL_CONFIG_GEODET.serviceId,
+                            EMAIL_CONFIG_GEODET.templateId,
+                            {
+                                to_email: geodetEmail,
+                                to_name: geodet,
+                                objekt_cislo: request.objektCislo,
+                                poznamka: request.poznamka,
+                                zadal_jmeno: request.jmeno,
+                                zadal_email: request.email,
+                                datum_pozadavku: request.datumPozadavku,
+                                app_url: 'https://geodetmasna.github.io/geodet-app/',
+                                ma_prilohu: request.prilohaFileId ? 'Ano' : 'Ne'
+                            }
+                        );
+                        console.log('Email geodetovi odeslán');
+                    } catch (emailError) {
+                        console.error('Chyba při odesílání emailu:', emailError);
+                        // Pokračujeme i když email selže
+                    }
+                }
+                
+                alert(`✅ Geodet ${geodet} byl přiřazen${geodetEmail ? ' a byl informován emailem' : ''}`);
                 await loadRequests();
             } catch (error) {
                 console.error('Chyba:', error);
