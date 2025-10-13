@@ -25,18 +25,14 @@
             measurementId: "G-ELWXC61BM5"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        // Konfigurace
         const API_URL = 'https://script.google.com/macros/s/AKfycbxMcVSWoZgeFU_jE2RUp_INEhZeAOo_T6qAZywQHUg3TTZ71acgvM9CjGQy4eAnXDTLPQ/exec';
 
-        // Seznam povolených emailů (můžete přidat více emailů podle potřeby)
         const ALLOWED_EMAILS = [
-            'martina.vesela@strabag.com','tomaula@gmail.com',
-            // Přidejte další povolené emaily zde
+            'mavesela@atlas.cz','tomaula@gmail.com',
         ];
 
         const geodeti = [
@@ -51,7 +47,8 @@
             requests: [],
             loading: false,
             loginError: null,
-            filter: 'all' // all, new, assigned, completed
+            filter: 'all',
+            viewMode: 'cards'
         };
 
         function getDriveFileUrl(fileId) {
@@ -135,6 +132,11 @@
             render();
         }
 
+        function setViewMode(mode) {
+            state.viewMode = mode;
+            render();
+        }
+
         function getFilteredRequests() {
             if (state.filter === 'all') return state.requests;
             if (state.filter === 'new') return state.requests.filter(r => r.stav === 'Nový');
@@ -143,13 +145,11 @@
             return state.requests;
         }
 
-        // Google Sign In
         window.signInWithGoogle = async function() {
             try {
                 const result = await signInWithPopup(auth, provider);
                 const email = result.user.email.toLowerCase();
                 
-                // Kontrola, zda je email povolen
                 const isAllowed = ALLOWED_EMAILS.some(allowedEmail => 
                     email.includes(allowedEmail.toLowerCase())
                 );
@@ -169,7 +169,6 @@
             }
         };
 
-        // Sign Out
         window.signOut = async function() {
             try {
                 await firebaseSignOut(auth);
@@ -180,7 +179,6 @@
             }
         };
 
-        // Auth state observer
         onAuthStateChanged(auth, (user) => {
             state.isLoading = false;
             
@@ -212,7 +210,6 @@
         function render() {
             const root = document.getElementById('root');
 
-            // Loading screen
             if (state.isLoading) {
                 root.innerHTML = `
                     <div class="min-h-screen flex items-center justify-center">
@@ -225,7 +222,6 @@
                 return;
             }
 
-            // Login screen
             if (!state.isAuthenticated) {
                 root.innerHTML = `
                     <div class="min-h-screen flex items-center justify-center p-4">
@@ -267,11 +263,11 @@
                 return;
             }
 
-            // Main app
+            const filteredReqs = getFilteredRequests();
+
             root.innerHTML = `
                 <div class="min-h-screen p-4">
                     <div class="max-w-7xl mx-auto">
-                        <!-- Hlavička -->
                         <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
                             <div class="flex justify-between items-center">
                                 <div>
@@ -314,7 +310,6 @@
                             </div>
                         </div>
 
-                        <!-- Statistiky -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                             <button 
                                 onclick="filterClick('new')"
@@ -345,41 +340,56 @@
                             </button>
                         </div>
 
-                        <!-- Seznam požadavků -->
                         <div class="bg-white rounded-2xl shadow-lg p-6">
-                            <!-- Filter tabs -->
-                            <div class="flex flex-wrap gap-2 mb-6 pb-4 border-b">
-                                <button 
-                                    onclick="filterClick('all')"
-                                    class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
-                                >
-                                    Vše (${state.requests.length})
-                                </button>
-                                <button 
-                                    onclick="filterClick('new')"
-                                    class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filter === 'new' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
-                                >
-                                    🔵 Nové (${state.requests.filter(r => r.stav === 'Nový').length})
-                                </button>
-                                <button 
-                                    onclick="filterClick('assigned')"
-                                    class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filter === 'assigned' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
-                                >
-                                    🟡 Přiřazené (${state.requests.filter(r => r.stav === 'Přiřazeno').length})
-                                </button>
-                                <button 
-                                    onclick="filterClick('completed')"
-                                    class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filter === 'completed' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
-                                >
-                                    🟢 Dokončené (${state.requests.filter(r => r.stav === 'Dokončeno').length})
-                                </button>
+                            <div class="flex flex-wrap items-center justify-between gap-2 mb-6 pb-4 border-b">
+                                <div class="flex flex-wrap gap-2">
+                                    <button 
+                                        onclick="filterClick('all')"
+                                        class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                                    >
+                                        Vše (${state.requests.length})
+                                    </button>
+                                    <button 
+                                        onclick="filterClick('new')"
+                                        class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filter === 'new' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                                    >
+                                        🔵 Nové (${state.requests.filter(r => r.stav === 'Nový').length})
+                                    </button>
+                                    <button 
+                                        onclick="filterClick('assigned')"
+                                        class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filter === 'assigned' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                                    >
+                                        🟡 Přiřazené (${state.requests.filter(r => r.stav === 'Přiřazeno').length})
+                                    </button>
+                                    <button 
+                                        onclick="filterClick('completed')"
+                                        class="px-4 py-2 rounded-lg font-semibold transition-all ${state.filter === 'completed' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                                    >
+                                        🟢 Dokončené (${state.requests.filter(r => r.stav === 'Dokončeno').length})
+                                    </button>
+                                </div>
+                                
+                                <div class="flex gap-2 bg-gray-100 p-1 rounded-lg">
+                                    <button 
+                                        onclick="viewModeClick('cards')"
+                                        class="px-3 py-1 rounded font-semibold text-sm transition-all ${state.viewMode === 'cards' ? 'bg-white text-blue-600 shadow' : 'text-gray-600'}"
+                                    >
+                                        📋 Karty
+                                    </button>
+                                    <button 
+                                        onclick="viewModeClick('table')"
+                                        class="px-3 py-1 rounded font-semibold text-sm transition-all ${state.viewMode === 'table' ? 'bg-white text-blue-600 shadow' : 'text-gray-600'}"
+                                    >
+                                        📊 Tabulka
+                                    </button>
+                                </div>
                             </div>
 
                             <h2 class="text-2xl font-bold text-gray-800 mb-6">
                                 ${state.filter === 'all' ? 'Všechny požadavky' : 
                                   state.filter === 'new' ? 'Nové požadavky' :
                                   state.filter === 'assigned' ? 'Přiřazené požadavky' :
-                                  'Dokončené požadavky'} (${getFilteredRequests().length})
+                                  'Dokončené požadavky'} (${filteredReqs.length})
                             </h2>
 
                             ${state.loading ? `
@@ -387,7 +397,7 @@
                                     <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
                                     <p class="mt-4 text-gray-600">Načítám požadavky...</p>
                                 </div>
-                            ` : getFilteredRequests().length === 0 ? `
+                            ` : filteredReqs.length === 0 ? `
                                 <div class="text-center py-12">
                                     <p class="text-gray-600 text-lg">
                                         ${state.filter === 'all' ? 'Zatím žádné požadavky' :
@@ -396,9 +406,90 @@
                                           'Žádné dokončené požadavky'}
                                     </p>
                                 </div>
+                            ` : state.viewMode === 'table' ? `
+                                <div class="overflow-x-auto">
+                                    <table class="w-full">
+                                        <thead class="bg-gray-50 border-b-2 border-gray-200">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Objekt</th>
+                                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Stav</th>
+                                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Zadal</th>
+                                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Datum</th>
+                                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Poznámka</th>
+                                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Geodet</th>
+                                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Akce</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-200">
+                                            ${filteredReqs.map(req => `
+                                                <tr class="hover:bg-gray-50">
+                                                    <td class="px-4 py-3 font-semibold text-gray-800">${req.objektCislo}</td>
+                                                    <td class="px-4 py-3">
+                                                        <span class="px-2 py-1 rounded-full text-xs font-bold ${getStatusColor(req.stav)}">
+                                                            ${req.stav}
+                                                        </span>
+                                                    </td>
+                                                    <td class="px-4 py-3 text-sm">
+                                                        <div>${req.jmeno}</div>
+                                                        <div class="text-xs text-gray-500">${req.email}</div>
+                                                    </td>
+                                                    <td class="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">${req.datumPozadavku}</td>
+                                                    <td class="px-4 py-3 text-sm text-gray-700 max-w-xs truncate" title="${req.poznamka}">${req.poznamka}</td>
+                                                    <td class="px-4 py-3 text-sm">
+                                                        ${req.stav === 'Nový' ? `
+                                                            <select 
+                                                                onchange="assignClick('${req.id}', this.value)"
+                                                                class="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                                                            >
+                                                                <option value="">-- Vybrat --</option>
+                                                                ${geodeti.map(g => `<option value="${g}">${g}</option>`).join('')}
+                                                            </select>
+                                                        ` : req.pridelenyGeodet || '-'}
+                                                    </td>
+                                                    <td class="px-4 py-3">
+                                                        <div class="flex gap-2">
+                                                            ${req.prilohaFileId ? `
+                                                                <a 
+                                                                    href="${getDriveFileUrl(req.prilohaFileId)}" 
+                                                                    target="_blank"
+                                                                    class="text-blue-600 hover:text-blue-800 text-sm font-semibold"
+                                                                    title="Příloha ze stavby"
+                                                                >
+                                                                    📎
+                                                                </a>
+                                                            ` : ''}
+                                                            ${req.fotkaFileId ? `
+                                                                <a 
+                                                                    href="${getDriveFileUrl(req.fotkaFileId)}" 
+                                                                    target="_blank"
+                                                                    class="text-green-600 hover:text-green-800 text-sm font-semibold"
+                                                                    title="Fotka ze zaměření"
+                                                                >
+                                                                    📷
+                                                                </a>
+                                                            ` : ''}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                ${req.stav === 'Dokončeno' ? `
+                                                    <tr class="bg-green-50">
+                                                        <td colspan="7" class="px-4 py-2 text-sm">
+                                                            <strong class="text-green-800">Dokončeno:</strong>
+                                                            <span class="text-gray-700">Typ: ${req.typZamereni || '-'}</span>
+                                                            <span class="mx-2">|</span>
+                                                            <span class="text-gray-700">Datum: ${req.datumDokonceni || '-'}</span>
+                                                            <span class="mx-2">|</span>
+                                                            <span class="text-gray-700">Poznámka: ${req.poznamkaGeodeta || '-'}</span>
+                                                        </td>
+                                                    </tr>
+                                                ` : ''}
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
                             ` : `
                                 <div class="space-y-4">
-                                    ${getFilteredRequests().map(req => `
+                                    ${filteredReqs.map(req => `
                                         <div class="border-2 border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow">
                                             <div class="flex justify-between items-start mb-3">
                                                 <div class="flex-1">
@@ -490,14 +581,13 @@
                 </div>
             `;
 
-            // Globální funkce
             window.refreshClick = loadRequests;
             window.exportClick = exportToExcel;
             window.assignClick = assignGeodet;
             window.filterClick = setFilter;
+            window.viewModeClick = setViewMode;
         }
 
-        // Initial render
         render();
     </script>
 </body>
