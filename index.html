@@ -52,7 +52,7 @@
         };
 
         const ALLOWED_EMAILS = [
-            'mavesela@atlas.cz','tomaula@gmail.com','jan.trnous@gmail.com','michalapt84@gmail.com','michaela.smejkalpeckova@gmail.com',
+            'mavesela@atlas.cz','tomaula@gmail.com','jan.trnous@gmail.com','michalapt84@gmail.com',
         ];
 
         const geodeti = [
@@ -530,6 +530,19 @@
                                                         </div>
                                                     </td>
                                                 </tr>
+                                                ${req.pozadovaneDatum && req.pozadovanyCas ? `
+                                                    <tr class="${req.potvrzenoGeodet === 'Ano' ? 'bg-green-50' : 'bg-orange-50'}">
+                                                        <td colspan="7" class="px-4 py-2 text-sm">
+                                                            <strong class="${req.potvrzenoGeodet === 'Ano' ? 'text-green-800' : 'text-orange-800'}">📅 Požadovaný termín:</strong>
+                                                            <span class="text-gray-700">${req.pozadovaneDatum} v ${req.pozadovanyCas}</span>
+                                                            ${req.potvrzenoGeodet === 'Ano' ? `
+                                                                <span class="mx-2 text-green-700 font-bold">✓ Geodet potvrdil</span>
+                                                            ` : `
+                                                                <span class="mx-2 text-orange-700 font-bold">⏳ Čeká na potvrzení</span>
+                                                            `}
+                                                        </td>
+                                                    </tr>
+                                                ` : ''}
                                                 ${req.stav === 'Dokončeno' ? `
                                                     <tr class="bg-green-50">
                                                         <td colspan="7" class="px-4 py-2 text-sm">
@@ -572,7 +585,24 @@
                                                     <p class="text-sm text-gray-600 mb-2">
                                                         <strong>Datum:</strong> ${req.datumPozadavku}
                                                     </p>
-                                                    <p class="text-gray-700">
+                                                    
+                                                    ${req.pozadovaneDatum && req.pozadovanyCas ? `
+                                                        <div class="mt-2 p-3 ${req.potvrzenoGeodet === 'Ano' ? 'bg-green-50 border-l-4 border-green-500' : 'bg-orange-50 border-l-4 border-orange-500'} rounded">
+                                                            <p class="text-sm font-semibold ${req.potvrzenoGeodet === 'Ano' ? 'text-green-800' : 'text-orange-800'} mb-1">
+                                                                📅 Požadovaný termín příjezdu:
+                                                            </p>
+                                                            <p class="text-sm ${req.potvrzenoGeodet === 'Ano' ? 'text-green-700' : 'text-orange-700'}">
+                                                                ${req.pozadovaneDatum} v ${req.pozadovanyCas}
+                                                            </p>
+                                                            ${req.potvrzenoGeodet === 'Ano' ? `
+                                                                <p class="text-xs text-green-600 font-bold mt-1">✓ Geodet potvrdil termín</p>
+                                                            ` : `
+                                                                <p class="text-xs text-orange-600 font-bold mt-1">⏳ Čeká na potvrzení geodeta</p>
+                                                            `}
+                                                        </div>
+                                                    ` : ''}
+                                                    
+                                                    <p class="text-gray-700 mt-2">
                                                         <strong>Poznámka:</strong> ${req.poznamka}
                                                     </p>
                                                     
